@@ -1,0 +1,40 @@
+version: 2.1
+executors:
+  docker-executor:
+    docker:
+      - image: cimg/node:21.1.0
+
+jobs:
+  deploy:
+    executor: docker-executor
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.11
+      - run:
+          name: Switch to Dockerfile Directory
+          command: cd ..
+      - run:
+          name: Build and Test
+          command: |
+            docker build -t hardik89990/docker-react -f Dockerfile.dev .
+            docker run -e CI=true hardik89990/docker-react npm run test
+           
+      - run:
+          name: Deploy to Elastic Beanstalk
+          command: |
+            docker run -it -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_REGION hardik89990/docker-react eb deploy $AWS_ENV --timeout 20
+
+           
+      
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - deploy:
+          filters:
+            branches:
+              only:
+                - master
+                
